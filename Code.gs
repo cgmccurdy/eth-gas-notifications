@@ -14,7 +14,7 @@ function ethGas() {
   const emailAddress = ""
   const owlracleKey = ""
   const etherscanKey = ""
-  const alertThreshold = -30
+  const alertThreshold = -25
   const notificationLimit = 24
   const transactionType = "Uniswap"
   const transactionGas = 184523
@@ -42,8 +42,8 @@ function ethGas() {
     sum += gasPrices[i];
   }
 
-  const averageRaw = sum / gasPrices.length;
-  const average = averageRaw.toFixed(2)
+  var averageRaw = sum / gasPrices.length;
+  var average = averageRaw.toFixed(2)
   Logger.log('7 day average: '+average+' gwei')
 
   var url = 'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey='+etherscanKey
@@ -53,18 +53,17 @@ function ethGas() {
   });
 
   var json = JSON.parse(response.getContentText());
-  const feeRaw = parseFloat(json['result']['suggestBaseFee'])
-  const fee = feeRaw.toFixed(2)
-
+  var feeRaw = parseFloat(json['result']['suggestBaseFee'])
+  var fee = feeRaw.toFixed(2)
 
   Logger.log('Current fee: '+fee+' gwei')
 
-  const differenceRaw = (fee - average) / average * 100
-  const difference = differenceRaw.toFixed(2)
+  var differenceRaw = (fee - average) / average * 100
+  var difference = differenceRaw.toFixed(2)
 
   Logger.log('Fee '+difference+'% from past 7 days')
 
-  if(differenceRaw < alertThreshold) {
+  if(difference < alertThreshold) {
 
     var scriptProperties = PropertiesService.getScriptProperties();
     var lastAlert = scriptProperties.getProperties()['lastAlert']
@@ -72,7 +71,7 @@ function ethGas() {
     var timeStamp = d.getTime();
     var timeSince = timeStamp - lastAlert
 
-    var lastDifference = scriptProperties.getProperties()['lastDifference']
+    var lastDifference = parseFloat(scriptProperties.getProperties()['lastDifference'])
 
     var msLimit = notificationLimit * 3600000
 
@@ -89,13 +88,13 @@ function ethGas() {
 
     Logger.log('Current price: '+price)
 
-    const estimatedRaw = fee / 1000000000 * price * transactionGas
-    const estimated = estimatedRaw.toFixed(2)
-    const emailContent = 'Estimation for '+transactionType+': $'+estimated
+    var estimatedRaw = fee / 1000000000 * price * transactionGas
+    var estimated = estimatedRaw.toFixed(2)
+    var emailContent = 'Current fee: '+fee+' gwei\nEstimation for '+transactionType+': $'+estimated
 
     Logger.log(emailContent)
 
-    const subjectLine = "ETH gas fee currently "+difference+'%'
+    var subjectLine = "ETH gas fee currently "+difference+'%'
 
     GmailApp.sendEmail(emailAddress, subjectLine, emailContent);
     Logger.log("Email sent")
@@ -104,6 +103,23 @@ function ethGas() {
 
     }
 
+    else {
+
+    if (timeSince < msLimit) {
+      Logger.log("Not enough time has passed since last notification. "+timeSince+" since last notification and limit is "+msLimit+".")
+
+    }
+
+    if (difference > lastDifference) {
+      Logger.log("Last notifcation had lower fees. "+lastDifference+" in the last notification and "+difference+" currently.")
+
+    }
+    }
+
+  }
+
+  else {
+    Logger.log("Fee above alert threshold.")
   }
 
 }
