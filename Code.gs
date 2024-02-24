@@ -110,7 +110,7 @@ function ethGas() {
 
     }
 
-    if (difference > lastDifference) {
+    if (difference >= lastDifference) {
       Logger.log("Last notifcation had lower fees. "+lastDifference+" in the last notification and "+difference+" currently.")
 
     }
